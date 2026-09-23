@@ -1,7 +1,7 @@
 // The plugin's own tests: what it makes of the message it is handed (Plan §53). Everything is
 // built as nodes, never as raw HTML, so a message can never bring markup of its own.
 import { describe, expect, it } from "vitest";
-import { blocksOf, inlineOf } from "./dist/index.js";
+import { blocksOf, inlineOf, noteName } from "./dist/index.js";
 
 describe("markdown", () => {
   it("reads headings, lists, quotes and code", () => {
@@ -35,5 +35,25 @@ describe("markdown", () => {
     expect(inlineOf("<script>evil()</script>")).toEqual([{ kind: "text", text: "<script>evil()</script>" }]);
     expect(inlineOf("[tap](javascript:steal())")).toEqual([{ kind: "text", text: "[tap](javascript:steal())" }]);
     expect(inlineOf("[file](file:///etc/passwd)")).toEqual([{ kind: "text", text: "[file](file:///etc/passwd)" }]);
+  });
+
+  // Opened from the apps bar it is an editor: you write, you look at it, and you hand it over.
+  it("shows what it is written", () => {
+    const view = document.createElement("ft-markdown");
+    document.body.append(view);
+    view.setAttribute("text", "# Title\n\ntext");
+
+    const written = view.shadowRoot.querySelector("textarea");
+    expect(written.value).toBe("# Title\n\ntext");
+    expect(view.shadowRoot.querySelector("[data-test='view']")).toBe(null);
+
+    view.shadowRoot.querySelector("[data-act='look']").click();
+    expect(view.shadowRoot.querySelector("[data-test='view'] h1").textContent).toBe("Title");
+    expect(view.shadowRoot.querySelector("textarea")).toBe(null);
+    view.remove();
+  });
+
+  it("names a note after the day it was written", () => {
+    expect(noteName(new Date(2026, 8, 23, 10, 5, 9))).toBe("note-20260923-100509.md");
   });
 });

@@ -1,7 +1,7 @@
 {
   "id": "com.flickertalk.markdown",
   "name": "Markdown",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "minCoreVersion": "0.1.0",
   "components": [
     "ft-markdown"
@@ -9,5 +9,5 @@
   "permissions": {
     "messages": "given"
   },
-  "summary": "Show a message written in markdown: headings, lists, quotes and code."
+  "summary": "Write markdown, look at it, and put it in the chat; open a file or save one."
 }

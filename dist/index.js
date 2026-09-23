@@ -117,14 +117,93 @@ function inlineNodes(line) {
   });
 }
 
+/** What a note is called when it is saved: the day and the time it was written. */
+export function noteName(now) {
+  const two = (value) => String(value).padStart(2, "0");
+  const day = `${now.getFullYear()}${two(now.getMonth() + 1)}${two(now.getDate())}`;
+  return `note-${day}-${two(now.getHours())}${two(now.getMinutes())}${two(now.getSeconds())}.md`;
+}
+
+const STYLE = `
+:host { display: block; font: 15px/1.6 system-ui, -apple-system, sans-serif; color: #111; }
+@media (prefers-color-scheme: dark) { :host { color: #f5f5f5; } }
+.bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 0 0 10px; }
+button {
+  appearance: none; border: 1px solid currentColor; background: transparent; color: inherit;
+  border-radius: 10px; min-width: 44px; height: 40px; font-size: 18px; cursor: pointer; opacity: .75;
+}
+button.on { opacity: 1; background: currentColor; }
+button.on > span { filter: invert(1); }
+.grow { flex: 1; }
+textarea {
+  display: block; width: 100%; min-height: 280px; box-sizing: border-box; resize: vertical;
+  border: 1px solid rgba(127,127,127,0.35); border-radius: 12px; padding: 10px 12px;
+  background: transparent; color: inherit; font: 14px/1.5 ui-monospace, Menlo, monospace;
+}
+h1,h2,h3,h4,h5,h6 { margin: 0.8em 0 0.3em; line-height: 1.25; }
+p, ul, blockquote, pre { margin: 0 0 0.8em; }
+ul { padding-left: 1.2em; }
+blockquote { padding-left: 0.8em; border-left: 3px solid currentColor; opacity: 0.75; }
+pre { padding: 10px 12px; border-radius: 10px; background: rgba(127,127,127,0.18); overflow-x: auto; }
+code { font: 13px/1.5 ui-monospace, Menlo, monospace; }
+a { color: inherit; }
+`;
+
+/**
+ * Markdown in FlickerTalk: write it, look at it, and hand it to the chat. It reads a message it is
+ * handed and it reads a file the user picks, and it builds nodes —never HTML— so nothing that
+ * arrives can bring markup of its own (§53).
+ */
 class Markdown extends HTMLElement {
   static observedAttributes = ["text"];
 
-  attributeChangedCallback() {
+  constructor() {
+    super();
+    this.text = "";
+    this.looking = false;
+  }
+
+  attributeChangedCallback(name, before, value) {
+    this.text = String(value ?? "");
     this.render();
   }
 
   connectedCallback() {
+    this.text = this.getAttribute("text") ?? this.text;
+    globalThis.ft?.onOpen(({ text }) => {
+      if (text) {
+        this.text = text;
+        this.looking = true;
+        this.render();
+      }
+    });
+    this.render();
+  }
+
+  /** What is written right now, whichever side is showing. */
+  written() {
+    const box = this.shadowRoot?.querySelector("textarea");
+    return box ? box.value : this.text;
+  }
+
+  onClick(event) {
+    const act = event.target.closest("button")?.dataset.act;
+    if (!act) return;
+    this.text = this.written();
+    if (act === "write") this.looking = false;
+    else if (act === "look") this.looking = true;
+    else if (act === "open") return void this.open();
+    else if (act === "save") globalThis.ft?.save(noteName(new Date()), "text/markdown", base64Of(this.text));
+    else if (act === "send") globalThis.ft?.say(this.text);
+    this.render();
+  }
+
+  /** A file the user picks, read as text. The plugin never opens a picker itself (§53). */
+  async open() {
+    const picked = await globalThis.ft?.pickFile("text/*");
+    if (!picked) return;
+    this.text = textOf(picked.data);
+    this.looking = false;
     this.render();
   }
 
@@ -133,47 +212,101 @@ class Markdown extends HTMLElement {
     root.innerHTML = "";
 
     const style = document.createElement("style");
-    style.textContent = `
-      :host { display: block; font: 15px/1.6 system-ui, -apple-system, sans-serif; color: #111; }
-      @media (prefers-color-scheme: dark) { :host { color: #f5f5f5; } }
-      h1,h2,h3,h4,h5,h6 { margin: 0.8em 0 0.3em; line-height: 1.25; }
-      p, ul, blockquote, pre { margin: 0 0 0.8em; }
-      ul { padding-left: 1.2em; }
-      blockquote { padding-left: 0.8em; border-left: 3px solid currentColor; opacity: 0.75; }
-      pre { padding: 10px 12px; border-radius: 10px; background: rgba(127,127,127,0.18); overflow-x: auto; }
-      code { font: 13px/1.5 ui-monospace, Menlo, monospace; }
-      a { color: inherit; }
-    `;
+    style.textContent = STYLE;
     root.append(style);
 
-    for (const block of blocksOf(this.getAttribute("text") ?? "")) {
-      if (block.kind === "heading") {
-        const node = document.createElement(`h${Math.min(block.level + 1, 6)}`);
-        node.append(...inlineNodes(block.text));
-        root.append(node);
-      } else if (block.kind === "list") {
-        const list = document.createElement("ul");
-        for (const item of block.items) {
-          const entry = document.createElement("li");
-          entry.append(...inlineNodes(item));
-          list.append(entry);
-        }
-        root.append(list);
-      } else if (block.kind === "quote") {
-        const quote = document.createElement("blockquote");
-        quote.append(...inlineNodes(block.text));
-        root.append(quote);
-      } else if (block.kind === "code") {
-        const pre = document.createElement("pre");
-        const code = document.createElement("code");
-        code.textContent = block.code;
-        pre.append(code);
-        root.append(pre);
-      } else {
-        const paragraph = document.createElement("p");
-        paragraph.append(...inlineNodes(block.text));
-        root.append(paragraph);
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    bar.append(
+      tool("write", "Write", "✏️", !this.looking),
+      tool("look", "Look at it", "👁️", this.looking),
+      tool("open", "Open a file", "📂", false),
+      grow(),
+      tool("save", "Save it on the phone", "💾", false),
+      tool("send", "Put it in the chat", "➤", false),
+    );
+    bar.addEventListener("click", (event) => this.onClick(event));
+    root.append(bar);
+
+    if (this.looking) {
+      const view = document.createElement("div");
+      view.dataset.test = "view";
+      draw(view, this.text);
+      root.append(view);
+      return;
+    }
+
+    const box = document.createElement("textarea");
+    box.value = this.text;
+    box.setAttribute("aria-label", "Markdown");
+    box.setAttribute("spellcheck", "false");
+    root.append(box);
+  }
+}
+
+function tool(act, label, icon, on) {
+  const made = document.createElement("button");
+  made.type = "button";
+  made.dataset.act = act;
+  made.setAttribute("aria-label", label);
+  if (on) made.className = "on";
+  const glyph = document.createElement("span");
+  glyph.textContent = icon;
+  made.append(glyph);
+  return made;
+}
+
+function grow() {
+  const made = document.createElement("span");
+  made.className = "grow";
+  return made;
+}
+
+/** Base64 of a text, as the app carries files. */
+function base64Of(text) {
+  const bytes = new TextEncoder().encode(text);
+  let binary = "";
+  for (let at = 0; at < bytes.length; at += 8192) binary += String.fromCharCode(...bytes.subarray(at, at + 8192));
+  return btoa(binary);
+}
+
+/** The text of a file the app handed over. */
+function textOf(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let at = 0; at < binary.length; at += 1) bytes[at] = binary.charCodeAt(at);
+  return new TextDecoder().decode(bytes);
+}
+
+/** Builds the markdown of `text` into `root`, as nodes. */
+function draw(root, text) {
+  for (const block of blocksOf(text)) {
+    if (block.kind === "heading") {
+      const node = document.createElement(`h${Math.min(block.level, 6)}`);
+      node.append(...inlineNodes(block.text));
+      root.append(node);
+    } else if (block.kind === "list") {
+      const list = document.createElement("ul");
+      for (const item of block.items) {
+        const entry = document.createElement("li");
+        entry.append(...inlineNodes(item));
+        list.append(entry);
       }
+      root.append(list);
+    } else if (block.kind === "quote") {
+      const quote = document.createElement("blockquote");
+      quote.append(...inlineNodes(block.text));
+      root.append(quote);
+    } else if (block.kind === "code") {
+      const pre = document.createElement("pre");
+      const code = document.createElement("code");
+      code.textContent = block.code;
+      pre.append(code);
+      root.append(pre);
+    } else {
+      const paragraph = document.createElement("p");
+      paragraph.append(...inlineNodes(block.text));
+      root.append(paragraph);
     }
   }
 }
