@@ -125,15 +125,19 @@ export function noteName(now) {
 }
 
 const STYLE = `
-:host { display: block; font: 15px/1.6 system-ui, -apple-system, sans-serif; color: #111; }
-@media (prefers-color-scheme: dark) { :host { color: #f5f5f5; } }
+:host { display: block; font: 15px/1.6 system-ui, -apple-system, sans-serif; color: #111; --paper: #fff; }
+@media (prefers-color-scheme: dark) { :host { color: #f5f5f5; --paper: #111; } }
 .bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 0 0 10px; }
 button {
   appearance: none; border: 1px solid currentColor; background: transparent; color: inherit;
   border-radius: 10px; min-width: 44px; height: 40px; font-size: 18px; cursor: pointer; opacity: .75;
 }
+.i {
+  display: block; width: 22px; height: 22px; margin: auto; background: currentColor;
+  -webkit-mask: var(--i) center/contain no-repeat; mask: var(--i) center/contain no-repeat;
+}
 button.on { opacity: 1; background: currentColor; }
-button.on > span { filter: invert(1); }
+button.on .i { background: var(--paper); }
 .grow { flex: 1; }
 textarea {
   display: block; width: 100%; min-height: 280px; box-sizing: border-box; resize: vertical;
@@ -218,12 +222,12 @@ class Markdown extends HTMLElement {
     const bar = document.createElement("div");
     bar.className = "bar";
     bar.append(
-      tool("write", "Write", "✏️", !this.looking),
-      tool("look", "Look at it", "👁️", this.looking),
-      tool("open", "Open a file", "📂", false),
+      tool("write", "Write", "pencil-outline", !this.looking),
+      tool("look", "Look at it", "eye-outline", this.looking),
+      tool("open", "Open a file", "folder-open-outline", false),
       grow(),
-      tool("save", "Save it on the phone", "💾", false),
-      tool("send", "Put it in the chat", "➤", false),
+      tool("save", "Save it on the phone", "download-outline", false),
+      tool("send", "Put it in the chat", "send-outline", false),
     );
     bar.addEventListener("click", (event) => this.onClick(event));
     root.append(bar);
@@ -250,9 +254,15 @@ function tool(act, label, icon, on) {
   made.dataset.act = act;
   made.setAttribute("aria-label", label);
   if (on) made.className = "on";
-  const glyph = document.createElement("span");
-  glyph.textContent = icon;
-  made.append(glyph);
+  made.append(drawIcon(icon));
+  return made;
+}
+
+/** An icon the app lends (`./icon/<name>.svg`): painted in the colour of the app, not a picture. */
+function drawIcon(name) {
+  const made = document.createElement("i");
+  made.className = "i";
+  made.style.setProperty("--i", `url(./icon/${name}.svg)`);
   return made;
 }
 
