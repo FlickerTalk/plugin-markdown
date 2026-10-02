@@ -1,7 +1,7 @@
 {
   "id": "com.flickertalk.markdown",
   "name": "Markdown",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "minCoreVersion": "0.1.0",
   "components": [
     "ft-markdown"
@@ -9,5 +9,67 @@
   "permissions": {
     "messages": "given"
   },
-  "summary": "Write markdown, look at it, and put it in the chat; open a file or save one."
+  "summary": "Write markdown, look at it, and put it in the chat; open a file or save one.",
+  "locales": {
+    "es": {
+      "summary": "Escribe Markdown, mira cómo queda y ponlo en el chat; abre un fichero o guarda uno."
+    },
+    "pt": {
+      "summary": "Escreva Markdown, veja como fica e ponha-o na conversa; abra um ficheiro ou guarde um."
+    },
+    "fr": {
+      "summary": "Écrivez du Markdown, voyez le rendu et mettez-le dans la conversation ; ouvrez un fichier ou enregistrez-en un."
+    },
+    "de": {
+      "summary": "Schreib Markdown, sieh es dir an und setz es in den Chat; öffne eine Datei oder speichere eine."
+    },
+    "it": {
+      "summary": "Scrivi in Markdown, guarda il risultato e mettilo nella chat; apri un file o salvane uno."
+    },
+    "ro": {
+      "summary": "Scrie Markdown, vezi cum arată și pune-l în conversație; deschide un fișier sau salvează unul."
+    },
+    "ru": {
+      "summary": "Пишите в Markdown, смотрите результат и вставляйте в чат; открывайте файл или сохраняйте в файл."
+    },
+    "uk": {
+      "summary": "Пишіть у Markdown, дивіться результат і вставляйте в чат; відкривайте файл або зберігайте у файл."
+    },
+    "pl": {
+      "summary": "Pisz w Markdown, zobacz, jak wygląda, i wstaw do czatu; otwórz plik albo zapisz tekst do pliku."
+    },
+    "tr": {
+      "summary": "Markdown yaz, nasıl göründüğüne bak ve sohbete koy; bir dosya aç ya da dosyaya kaydet."
+    },
+    "ar": {
+      "summary": "اكتب بلغة Markdown، واطّلع على شكلها، وضعها في المحادثة؛ افتح ملفًا أو احفظ واحدًا."
+    },
+    "hi": {
+      "summary": "Markdown लिखें, देखें कि कैसा दिखता है, और चैट में रखें; कोई फ़ाइल खोलें या फ़ाइल में सहेजें।"
+    },
+    "bn": {
+      "summary": "Markdown লিখুন, দেখতে কেমন হয় দেখুন, আর চ্যাটে রাখুন; কোনো ফাইল খুলুন বা ফাইলে সংরক্ষণ করুন।"
+    },
+    "id": {
+      "summary": "Tulis Markdown, lihat hasilnya, lalu taruh di obrolan; buka berkas atau simpan sebagai berkas."
+    },
+    "vi": {
+      "summary": "Viết Markdown, xem kết quả và đưa vào cuộc trò chuyện; mở một tệp hoặc lưu thành tệp."
+    },
+    "th": {
+      "summary": "เขียน Markdown ดูผลลัพธ์ แล้วใส่ลงในแชท เปิดไฟล์หรือบันทึกเป็นไฟล์"
+    },
+    "ja": {
+      "summary": "Markdown を書いて表示を確かめ、チャットに入れられます。ファイルを開いたり保存したりもできます。"
+    },
+    "ko": {
+      "summary": "Markdown을 쓰고 미리 보고 채팅에 넣으세요. 파일을 열거나 저장할 수도 있습니다."
+    },
+    "zh-CN": {
+      "summary": "编写 Markdown，查看效果，再放进聊天；也可以打开或保存文件。"
+    },
+    "zh-TW": {
+      "summary": "撰寫 Markdown，查看效果，再放進聊天；也可以開啟或儲存檔案。"
+    }
+  }
 }

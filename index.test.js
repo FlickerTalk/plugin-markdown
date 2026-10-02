@@ -2,6 +2,26 @@
 // built as nodes, never as raw HTML, so a message can never bring markup of its own.
 import { describe, expect, it } from "vitest";
 import { blocksOf, inlineOf, noteName } from "./dist/index.js";
+import manifest from "./module.json";
+
+// The app's languages (plugin-sdk, module.schema.json): English is the top level.
+const languages = ["es", "pt", "fr", "de", "it", "ro", "ru", "uk", "pl", "tr", "ar", "hi", "bn", "id", "vi", "th", "ja", "ko", "zh-CN", "zh-TW"];
+
+// The schema counts characters, not UTF-16 units.
+const length = (text) => [...text].length;
+
+describe("manifest", () => {
+  // Markdown is the name of the format: it stays as it is, only the summary is translated.
+  it("sums itself up in every language of the app, and keeps its name", () => {
+    expect(Object.keys(manifest.locales ?? {})).toEqual(languages);
+    for (const code of languages) {
+      const { summary, ...rest } = manifest.locales[code];
+      expect(rest, code).toEqual({});
+      expect(summary?.trim(), code).toBeTruthy();
+      expect(length(summary), code).toBeLessThanOrEqual(200);
+    }
+  });
+});
 
 describe("markdown", () => {
   it("reads headings, lists, quotes and code", () => {
