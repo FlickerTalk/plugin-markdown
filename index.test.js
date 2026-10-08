@@ -73,14 +73,16 @@ describe("markdown", () => {
     document.body.append(view);
     view.setAttribute("text", "# Title\n\ntext");
 
-    const written = view.querySelector("ion-textarea");
+    const written = view.querySelector("textarea");
     expect(written.value).toBe("# Title\n\ntext");
     expect(view.querySelector("[data-test='view']")).toBe(null);
 
-    view.querySelector("ion-segment-button[value='look']").click();
+    // Ionic answers a tap once it has drawn, as on the phone.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    view.querySelector("[data-act='look']").click();
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(view.querySelector("[data-test='view'] h1").textContent).toBe("Title");
-    expect(view.querySelector("ion-textarea")).toBe(null);
+    expect(view.querySelector("textarea")).toBe(null);
     view.remove();
   });
 
@@ -123,29 +125,31 @@ describe("with the Ionic the app lends", () => {
   it("draws in the page, not in a shadow root, so Ionic's own styles reach it", async () => {
     const element = await mount();
     expect(element.shadowRoot).toBe(null);
-    expect(element.querySelector("ion-toolbar")).toBeTruthy();
-    expect(element.querySelector("ion-content ion-textarea")).toBeTruthy();
+    expect(element.querySelector(":scope > ion-header > ion-toolbar")).toBeTruthy();
+    expect(element.querySelector(":scope > ion-content textarea")).toBeTruthy();
   });
 
-  it("chooses between writing and looking with a segment, and acts with labelled Ionic buttons", async () => {
+  it("has every action as a labelled Ionic button in its toolbar, the side it shows pressed", async () => {
     const element = await mount();
-    const segment = element.querySelector("ion-toolbar ion-segment");
-    expect(segment.value).toBe("write");
-    expect([...segment.querySelectorAll("ion-segment-button")].map((one) => [one.value, label(one) ?? one.getAttribute("aria-label")])).toEqual([
-      ["write", "Write"],
-      ["look", "Look at it"],
-    ]);
     const acts = [...element.querySelectorAll("ion-toolbar ion-button")].map((button) => [button.dataset.act, label(button)]);
     expect(acts).toEqual([
+      ["write", "Write"],
+      ["look", "Look at it"],
       ["open", "Open a file"],
       ["save", "Save it on the phone"],
       ["send", "Put it in the chat"],
     ]);
+    const pressed = () => [...element.querySelectorAll("ion-button[aria-pressed='true']")].map((button) => button.dataset.act);
+    expect(pressed()).toEqual(["write"]);
+    element.querySelector('ion-button[data-act="look"]').click();
+    await tick();
+    expect(pressed()).toEqual(["look"]);
+    expect(element.querySelector('ion-button[data-act="look"]').fill).toBe("solid");
   });
 
   it("puts what is written in the chat, saves it, and opens a file, from its buttons", async () => {
     const element = await mount("hello");
-    element.querySelector("ion-textarea").value = "hello *world*";
+    element.querySelector("textarea").value = "hello *world*";
     element.querySelector('ion-button[data-act="send"]').click();
     element.querySelector('ion-button[data-act="save"]').click();
     element.querySelector('ion-button[data-act="open"]').click();
@@ -157,11 +161,11 @@ describe("with the Ionic the app lends", () => {
 
   it("goes back to writing what it was looking at", async () => {
     const element = await mount("# Back");
-    element.querySelector("ion-segment-button[value='look']").click();
+    element.querySelector('ion-button[data-act="look"]').click();
     await tick();
-    element.querySelector("ion-segment-button[value='write']").click();
+    element.querySelector('ion-button[data-act="write"]').click();
     await tick();
-    expect(element.querySelector("ion-textarea").value).toBe("# Back");
+    expect(element.querySelector("textarea").value).toBe("# Back");
     expect(element.querySelectorAll("ion-toolbar")).toHaveLength(1);
   });
 
