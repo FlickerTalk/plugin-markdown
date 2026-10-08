@@ -129,14 +129,14 @@ export function noteName(now) {
 const STYLE = `
 ft-markdown { display: flex; flex-direction: column; height: 100%; }
 ft-markdown ion-content { flex: 1; }
-ft-markdown ion-segment { width: auto; }
 ft-markdown .ft-i {
   display: block; width: 22px; height: 22px; background: currentColor;
   -webkit-mask: var(--i) center/contain no-repeat; mask: var(--i) center/contain no-repeat;
 }
-ft-markdown ion-textarea {
-  --padding-start: 12px; --padding-end: 12px; font: 14px/1.5 ui-monospace, Menlo, monospace;
-  border: 1px solid var(--ion-border-color, rgba(127,127,127,0.35)); border-radius: 12px;
+ft-markdown textarea {
+  display: block; width: 100%; min-height: 280px; box-sizing: border-box; resize: vertical;
+  border: 1px solid var(--ion-border-color, rgba(127,127,127,0.35)); border-radius: 12px; padding: 10px 12px;
+  background: transparent; color: inherit; font: 14px/1.5 ui-monospace, Menlo, monospace;
 }
 ft-markdown [data-test="view"] { font-size: 15px; line-height: 1.6; }
 ft-markdown [data-test="view"] :is(h1, h2, h3, h4, h5, h6) { margin: 0.8em 0 0.3em; line-height: 1.25; }
@@ -150,10 +150,10 @@ ft-markdown [data-test="view"] a { color: var(--ion-color-primary, inherit); }
 
 /** An Ionicon: Ionic's own `ion-icon` when the app lent it by name, else the one the app serves at
  *  `./icon/<name>.svg`, painted in the button's colour. Never a picture of ours. */
-const icon = (name, slot = "icon-only") =>
+const icon = (name) =>
   globalThis.Ionicons?.map?.has(name)
-    ? `<ion-icon slot="${slot}" name="${name}" aria-hidden="true"></ion-icon>`
-    : `<i slot="${slot}" class="ft-i" style="--i:url(./icon/${name}.svg)" aria-hidden="true"></i>`;
+    ? `<ion-icon slot="icon-only" name="${name}" aria-hidden="true"></ion-icon>`
+    : `<i slot="icon-only" class="ft-i" style="--i:url(./icon/${name}.svg)" aria-hidden="true"></i>`;
 
 /**
  * Markdown in FlickerTalk: write it, look at it, and hand it to the chat. It reads a message it is
@@ -186,48 +186,47 @@ class Markdown extends HTMLElement {
     this.render();
   }
 
-  /** The window, once: Ionic's toolbar with the choice and the actions, and the page below it. In
-   *  the page, not in a shadow root: Ionic's global styles do not cross a shadow boundary. */
+  /** The window, once: Ionic's header with the bar, and the page below it. In the page, not in a
+   *  shadow root: Ionic's global styles do not cross a shadow boundary. */
   frame() {
     if (this.page) return;
     this.innerHTML = `
       <style>${STYLE}</style>
+      <ion-header>
       <ion-toolbar>
-        <ion-segment slot="start" value="write">
-          <ion-segment-button value="write" aria-label="Write">${icon("pencil-outline", "")}</ion-segment-button>
-          <ion-segment-button value="look" aria-label="Look at it">${icon("eye-outline", "")}</ion-segment-button>
-        </ion-segment>
-        <ion-buttons slot="end">
+        <ion-buttons slot="start">
+          <ion-button data-act="write" aria-label="Write">${icon("pencil-outline")}</ion-button>
+          <ion-button data-act="look" aria-label="Look at it">${icon("eye-outline")}</ion-button>
           <ion-button data-act="open" aria-label="Open a file">${icon("folder-open-outline")}</ion-button>
+        </ion-buttons>
+        <ion-buttons slot="end">
           <ion-button data-act="save" aria-label="Save it on the phone">${icon("download-outline")}</ion-button>
           <ion-button data-act="send" aria-label="Put it in the chat">${icon("send-outline")}</ion-button>
         </ion-buttons>
       </ion-toolbar>
+      </ion-header>
       <ion-content class="ion-padding"></ion-content>
     `;
     this.page = this.querySelector("ion-content");
-    this.segment = this.querySelector("ion-segment");
-    this.segment.addEventListener("ionChange", (event) => {
-      this.text = this.written();
-      this.looking = event.detail.value === "look";
-      this.render();
-    });
-    this.querySelector("ion-buttons").addEventListener("click", (event) => this.onClick(event));
+    this.querySelector("ion-toolbar").addEventListener("click", (event) => this.onClick(event));
   }
 
   /** What is written right now, whichever side is showing. */
   written() {
-    const box = this.page?.querySelector("ion-textarea");
-    return box ? String(box.value ?? "") : this.text;
+    const box = this.page?.querySelector("textarea");
+    return box ? box.value : this.text;
   }
 
   onClick(event) {
     const act = event.target.closest("ion-button")?.dataset.act;
     if (!act) return;
     this.text = this.written();
-    if (act === "open") this.open();
+    if (act === "write") this.looking = false;
+    else if (act === "look") this.looking = true;
+    else if (act === "open") return void this.open();
     else if (act === "save") globalThis.ft?.save(noteName(new Date()), "text/markdown", base64Of(this.text));
     else if (act === "send") globalThis.ft?.say(this.text);
+    this.render();
   }
 
   /** A file the user picks, read as text. The plugin never opens a picker itself (§53). */
@@ -241,7 +240,11 @@ class Markdown extends HTMLElement {
 
   render() {
     this.frame();
-    this.segment.value = this.looking ? "look" : "write";
+    for (const [act, on] of [["write", !this.looking], ["look", this.looking]]) {
+      const button = this.querySelector(`ion-button[data-act="${act}"]`);
+      button.fill = on ? "solid" : undefined;
+      button.setAttribute("aria-pressed", String(on));
+    }
     this.page.innerHTML = "";
 
     if (this.looking) {
@@ -252,13 +255,10 @@ class Markdown extends HTMLElement {
       return;
     }
 
-    const box = document.createElement("ion-textarea");
+    const box = document.createElement("textarea");
     box.value = this.text;
-    box.autoGrow = true;
-    box.rows = 12;
     box.setAttribute("aria-label", "Markdown");
     box.setAttribute("spellcheck", "false");
-    box.setAttribute("autocapitalize", "off");
     this.page.append(box);
   }
 }

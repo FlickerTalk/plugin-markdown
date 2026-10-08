@@ -139,7 +139,9 @@ describe("with the Ionic the app lends", () => {
       ["save", "Save it on the phone"],
       ["send", "Put it in the chat"],
     ]);
-    const pressed = () => [...element.querySelectorAll("ion-button[aria-pressed='true']")].map((button) => button.dataset.act);
+    // Ionic hands aria-pressed to its native button too, and follows it when it changes.
+    const isPressed = (button) => (button.getAttribute("aria-pressed") ?? button.shadowRoot?.querySelector("button")?.getAttribute("aria-pressed")) === "true";
+    const pressed = () => [...element.querySelectorAll("ion-toolbar ion-button")].filter(isPressed).map((button) => button.dataset.act);
     expect(pressed()).toEqual(["write"]);
     element.querySelector('ion-button[data-act="look"]').click();
     await tick();
