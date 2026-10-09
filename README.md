@@ -14,6 +14,11 @@ el núcleo expone (`ft.pickFile`, `ft.send`, `ft.say`, `ft.save`, `ft.print`, `f
 `ft.store`, `ft.close`). El contrato está en
 [plugin-sdk](https://github.com/FlickerTalk/plugin-sdk).
 
+Desde la 1.1.4 la barra y el cuerpo van en los envoltorios de Ionic que la app presta al marco
+(`ion-header`, `ion-toolbar`, `ion-button`, `ion-content`), así que se ve con el tema de la app;
+pide la app 1.6.0 (`minCoreVersion`) y el paquete no lleva Ionic. `@ionic/core` es solo `devDependency`,
+para que los tests pinten lo mismo que el teléfono.
+
 ## Desarrollo
 
 ```sh
